@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Night Board</title>
+<style>
+  :root { --bg:#f3f5ff; --surface:#fff; --fg:#10183a; --muted:#55608a; --accent:#2456f5; --pop:#ffd23f; --pop-ink:#1a1400; --line:#bfc9ee; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0b1020; --surface:#131a30; --fg:#f2f5ff; --muted:#9aa7cc; --accent:#3d6bff; --line:#2d3a68; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--fg); font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  header { background:var(--accent); color:#fff; padding:1rem 1.25rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; font-size:1.5rem; }
+  main { max-width:36rem; margin:0 auto; padding:1.5rem 1.25rem 3rem; }
+  p { color:var(--muted); margin:.25rem 0 1.25rem; }
+  a.card { display:block; text-decoration:none; color:inherit; background:var(--surface); border:2px solid var(--fg); border-radius:1rem; padding:1rem 1.125rem; margin-top:.875rem; box-shadow:4px 4px 0 var(--fg); }
+  a.card:active { transform:translate(2px,2px); box-shadow:2px 2px 0 var(--fg); }
+  a.card b { display:block; font-size:1.25rem; text-transform:uppercase; letter-spacing:.03em; }
+  a.card span { color:var(--muted); font-size:.9375rem; }
+  .tag { display:inline-block; background:var(--pop); color:var(--pop-ink); font:500 .75rem ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; padding:2px .5rem; }
+  h2 { font-size:.875rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin:2rem 0 0; }
+  a:focus-visible { outline:3px solid var(--pop); outline-offset:2px; }
+</style>
+</head>
+<body>
+<header>Night Board</header>
+<main>
+  <span class="tag">Prototype · fake data</span>
+  <p>Two views of the same idea. Open each one on a phone or a laptop.</p>
+  <a class="card" href="dispatch.html"><b>Dispatch</b><span>Plan, Excel sync, recent changes, requests, tasks.</span></a>
+  <a class="card" href="supervisor.html"><b>Supervisor</b><span>Tonight, calendar and overview for the night supervisor.</span></a>
+  <h2>Demo files</h2>
+  <p>Upload these in Dispatch under Build, then Excel. Before first, then updated.</p>
+  <a class="card" href="demo/Rota_demo_before.xlsx" download><b>Rota demo, before</b><span>Rota_demo_before.xlsx</span></a>
+  <a class="card" href="demo/Rota_demo_updated.xlsx" download><b>Rota demo, updated</b><span>Rota_demo_updated.xlsx</span></a>
+</main>
+</body>
+</html>

@@ -1,0 +1,1148 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Night Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-column phone app. Solid colour masthead, square-edged controls with hard shadows,
+   views for Tonight, Calendar, Hotel and Hotel monthly plan, fixed bottom tab bar.
+   Dark-first because it is used on night shifts; the light theme mirrors it. */
+:root {
+  --bg: #0b1020;
+  --surface: #131a30;
+  --surface-2: #1b2442;
+  --line: #2d3a68;
+  --fg: #f2f5ff;
+  --muted: #9aa7cc;
+  --accent: #3d6bff;
+  --accent-ink: #ffffff;
+  --accent-text: #86a9ff;
+  --accent-soft: rgba(61, 107, 255, 0.22);
+  --pop: #ffd23f;
+  --pop-ink: #1a1400;
+  --warn: #ff9a3d;
+  --warn-soft: rgba(255, 154, 61, 0.16);
+  --crit: #ff5a6e;
+  --crit-soft: rgba(255, 90, 110, 0.18);
+  --shadow: #000000;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f5ff;
+    --surface: #ffffff;
+    --surface-2: #e4e9ff;
+    --line: #bfc9ee;
+    --fg: #10183a;
+    --muted: #55608a;
+    --accent: #2456f5;
+    --accent-ink: #ffffff;
+    --accent-text: #1c44cc;
+    --accent-soft: rgba(36, 86, 245, 0.12);
+    --pop: #ffd23f;
+    --pop-ink: #1a1400;
+    --warn: #b84f00;
+    --warn-soft: rgba(255, 140, 30, 0.16);
+    --crit: #cc2238;
+    --crit-soft: rgba(204, 34, 56, 0.10);
+    --shadow: #10183a;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f5ff;
+  --surface: #ffffff;
+  --surface-2: #e4e9ff;
+  --line: #bfc9ee;
+  --fg: #10183a;
+  --muted: #55608a;
+  --accent: #2456f5;
+  --accent-ink: #ffffff;
+  --accent-text: #1c44cc;
+  --accent-soft: rgba(36, 86, 245, 0.12);
+  --pop: #ffd23f;
+  --pop-ink: #1a1400;
+  --warn: #b84f00;
+  --warn-soft: rgba(255, 140, 30, 0.16);
+  --crit: #cc2238;
+  --crit-soft: rgba(204, 34, 56, 0.10);
+  --shadow: #10183a;
+  color-scheme: light;
+}
+
+:root {
+  /* Scales up on tablets, then stops at 19px so laptops get a stable view. */
+  font-size: clamp(17px, 0.5vw + 15px, 19px);
+  --gl: max(16px, env(safe-area-inset-left, 0px), calc((100vw - 60rem) / 2));
+  --gr: max(16px, env(safe-area-inset-right, 0px), calc((100vw - 60rem) / 2));
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  padding-left: var(--gl);
+  padding-right: var(--gr);
+  padding-block: 0 6.5rem;
+  min-height: 100vh;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--accent);
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent-text); }
+:focus-visible { outline: 3px solid var(--pop); outline-offset: 2px; }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* Masthead: full-bleed colour band */
+.mast {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--accent);
+  color: var(--accent-ink);
+  margin-left: calc(-1 * var(--gl));
+  margin-right: calc(-1 * var(--gr));
+  padding: 0.75rem var(--gr) 0.75rem var(--gl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.75rem;
+}
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; }
+.brand small { font-family: var(--font-data); font-weight: 500; font-size: 0.6875rem; opacity: 0.85; margin-left: 0.5rem; letter-spacing: 0.08em; }
+.badge-demo {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 0.5rem;
+  background: var(--pop);
+  color: var(--pop-ink);
+  white-space: nowrap;
+}
+
+main { padding-top: 1.25rem; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 2.125rem; line-height: 1.05; margin: 0; text-wrap: balance; text-transform: uppercase; letter-spacing: 0.005em; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0.5rem 0 0; }
+
+/* Status strip */
+.strip { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 1.125rem; border: 2px solid var(--fg); background: var(--surface); }
+.strip > div { padding: 0.625rem 0 0.625rem 0.75rem; border-left: 2px solid var(--fg); min-width: 0; }
+.strip > div:first-child { border-left: 0; }
+.strip b { display: block; font-family: var(--font-data); font-weight: 500; font-size: 1.875rem; line-height: 1.1; }
+.strip span { font-size: 0.6875rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.strip .is-warn b { color: var(--warn); }
+.strip .is-crit b { color: var(--crit); }
+
+/* Shift rows */
+.rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 0.75rem; margin-top: 1rem; }
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 0.75rem;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  padding: 0.75rem 0.875rem;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.row:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow); }
+.row .name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; line-height: 1.15; text-transform: uppercase; }
+.row .meta { color: var(--muted); font-size: 0.8125rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0.5rem; margin-top: 3px; }
+.row .time { font-family: var(--font-data); font-size: 0.8125rem; font-weight: 500; text-align: right; }
+.row .side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.375rem; }
+.person { color: var(--fg); font-weight: 500; }
+.person.gap { color: var(--crit); }
+
+.pill {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 0.4375rem;
+  white-space: nowrap;
+  border: 2px solid transparent;
+}
+.pill.warn { background: var(--warn); color: #1a0c00; border-color: var(--warn); }
+.pill.crit { background: var(--crit); color: #ffffff; border-color: var(--crit); }
+.pill.neutral { background: var(--surface-2); color: var(--muted); border-color: var(--line); }
+.chip { font-family: var(--font-data); font-size: 0.75rem; padding: 1px 0.4375rem; background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 2.875rem; padding: 0 1.125rem;
+  border: 2px solid var(--fg);
+  background: var(--surface); color: var(--fg);
+  text-decoration: none; font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.06em; text-transform: uppercase;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow); }
+.btn.primary { background: var(--pop); color: var(--pop-ink); border-color: var(--pop-ink); }
+.btn.small { min-height: 2.25rem; padding: 0 0.75rem; font-size: 0.875rem; box-shadow: 3px 3px 0 var(--shadow); }
+.actions { display: flex; flex-wrap: wrap; gap: 0.875rem; margin-top: 1.125rem; }
+.icon-btn { width: 2.875rem; height: 2.875rem; border: 2px solid var(--fg); background: var(--surface); font-size: 1.375rem; line-height: 1; font-weight: 700; box-shadow: 3px 3px 0 var(--shadow); }
+.icon-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow); }
+
+/* Hotel detail */
+.back { background: none; border: 0; padding: 0.375rem 0; color: var(--accent-text); font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.06em; text-transform: uppercase; display: inline-flex; gap: 0.375rem; align-items: center; }
+.alert-box { margin-top: 1rem; padding: 0.75rem 0.875rem; background: var(--warn-soft); border: 2px solid var(--warn); }
+.alert-box.crit { background: var(--crit-soft); border-color: var(--crit); }
+.alert-box strong { display: block; font-family: var(--font-display); font-size: 0.875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warn); }
+.alert-box.crit strong { color: var(--crit); }
+.alert-box p { margin: 4px 0 0; }
+dl.facts { margin: 1.5rem 0 0; display: grid; grid-template-columns: 1fr; border-top: 2px solid var(--fg); }
+dl.facts > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 0.75rem; padding: 0.6875rem 0; border-bottom: 1px solid var(--line); }
+dl.facts dt { color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 3px; font-weight: 500; }
+dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+.assigned-name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-transform: uppercase; line-height: 1.1; }
+.links { display: flex; flex-wrap: wrap; gap: 0.375rem 1rem; margin-top: 0.375rem; }
+.links a, .links button.linklike { font-weight: 600; }
+.linklike { background: none; border: 0; padding: 0; color: var(--accent-text); text-decoration: underline; font-weight: 600; }
+.copy { background: none; border: 0; color: var(--accent-text); padding: 0 0 0 0.5rem; font-size: 0.8125rem; text-decoration: underline; }
+
+.notes-head { display: flex; align-items: baseline; justify-content: space-between; margin-top: 1.875rem; }
+.note-form { margin-top: 0.625rem; display: grid; gap: 0.625rem; }
+textarea {
+  width: 100%; min-height: 4.75rem; resize: vertical;
+  background: var(--surface); border: 2px solid var(--fg); padding: 0.625rem 0.75rem;
+}
+textarea::placeholder { color: var(--muted); }
+.note-form .btn { justify-self: start; }
+.note { padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+.note p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note .by { display: flex; flex-wrap: wrap; gap: 4px 0.625rem; align-items: center; margin-top: 0.375rem; font-size: 0.75rem; color: var(--muted); font-family: var(--font-data); }
+.fine { font-size: 0.75rem; color: var(--muted); margin-top: 0.625rem; }
+
+/* Calendar */
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.cal-head h1 { font-size: 1.75rem; text-align: center; }
+.dow, .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.dow { margin-top: 1.125rem; font-family: var(--font-data); font-size: 0.6875rem; color: var(--muted); text-align: center; letter-spacing: 0.06em; text-transform: uppercase; }
+.grid { margin-top: 0.375rem; }
+.day {
+  aspect-ratio: 1 / 1.08; max-width: 100%;
+  background: var(--surface); border: 2px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: 0.375rem 2px 0.4375rem; min-width: 0;
+}
+.day .n { font-family: var(--font-data); font-size: 0.875rem; font-weight: 500; }
+.day .dots { display: flex; gap: 3px; min-height: 0.5rem; }
+.dot { width: 0.5rem; height: 0.5rem; display: inline-block; }
+.dot.warn { background: var(--warn); }
+.dot.crit { background: var(--crit); }
+.day.out { visibility: hidden; }
+.day.today { border-color: var(--pop); }
+.day.sel { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.day.sel.today { border-color: var(--pop); }
+.day.sel .dot { outline: 2px solid var(--accent-ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 1rem; margin-top: 0.75rem; font-size: 0.75rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 0.375rem; }
+.day-list-head { margin-top: 1.75rem; }
+
+/* Hotel monthly plan */
+.plan { display: flex; flex-direction: column; margin-top: 1rem; border-top: 2px solid var(--fg); }
+.plan-row {
+  display: grid; grid-template-columns: 3.875rem minmax(0, 1fr) auto; gap: 0.625rem; align-items: center;
+  width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0.6875rem 0.375rem;
+}
+.plan-row .d { font-family: var(--font-data); font-weight: 500; font-size: 0.8125rem; color: var(--muted); }
+.plan-row .who { font-weight: 600; }
+.plan-row.today { background: var(--accent-soft); box-shadow: inset 4px 0 0 var(--pop); }
+.plan-row.weekend .d { color: var(--accent-text); }
+.tally { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.625rem; }
+.tally span { padding: 4px 0.5rem; border: 2px solid var(--line); background: var(--surface); font-size: 0.8125rem; }
+.tally b { font-family: var(--font-data); font-weight: 500; margin-left: 4px; color: var(--accent-text); }
+
+.plan-row .who-btn { background: none; border: 0; padding: 0; font-weight: 600; text-align: left; color: var(--accent-text); text-decoration: underline; font-size: 0.9375rem; }
+.plan-row .end { display: flex; align-items: center; gap: 0.625rem; }
+.plan-row .open { background: none; border: 0; padding: 0 2px; font-size: 1.25rem; font-weight: 700; color: var(--fg); line-height: 1; }
+.plan-row.off .who { color: var(--muted); font-weight: 400; }
+.plan-row .t { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.sect { margin-top: 1.75rem; }
+.emp-head { margin-top: 0.375rem; }
+
+/* Tab bar */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem;
+  padding: 0.625rem var(--gr) calc(0.625rem + env(safe-area-inset-bottom, 0px)) var(--gl);
+  background: var(--surface); border-top: 2px solid var(--fg);
+}
+.tab { min-height: 3rem; border: 2px solid var(--line); background: var(--bg); color: var(--muted); font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.tab[aria-current="page"] { background: var(--pop); color: var(--pop-ink); border-color: var(--pop-ink); box-shadow: 3px 3px 0 var(--shadow); }
+
+/* Staffing badge: planned / ordered */
+.xy { font-family: var(--font-data); font-weight: 500; font-size: 0.8125rem; line-height: 1.3; padding: 1px 0.5rem; border-radius: 999px; border: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent-text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.xy.part { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
+.xy.none { border-color: var(--crit); background: var(--crit-soft); color: var(--crit); }
+
+/* Calendar cells */
+.day { aspect-ratio: 1 / 1.2; }
+.day .xy { font-size: 0.6875rem; padding: 0 0.3125rem; border-width: 1px; }
+.day.sel .xy { background: var(--bg); color: var(--fg); border-color: var(--bg); }
+.day.sel .xy.part { border-color: var(--warn); }
+.day.sel .xy.none { border-color: var(--crit); }
+.day .foot { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 0.75rem; }
+.grid.tall .day { aspect-ratio: auto; min-height: 5.75rem; }
+.names { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; font-size: 0.6875rem; line-height: 1.2; text-align: center; }
+.names span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.names .nobody { color: var(--crit); font-weight: 600; }
+.code { font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: 0.04em; padding: 0.125rem 0.4375rem; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); }
+.day.offcell { background: transparent; border-style: dashed; color: var(--muted); }
+.day.offcell .offtxt { font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.legend .code { font-size: 0.75rem; padding: 0 0.3125rem; }
+
+/* Toolbar with Table / Calendar switch */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.seg { display: inline-flex; flex: none; border: 2px solid var(--fg); border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: 3px 3px 0 var(--shadow); }
+.seg button { border: 0; background: none; color: var(--muted); padding: 0 0.875rem; min-height: 2.5rem; font-family: var(--font-display); font-weight: 700; font-size: 0.9375rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.seg button + button { border-left: 2px solid var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--pop); color: var(--pop-ink); }
+.person-block + .person-block { margin-top: 0.875rem; }
+.open-line { margin-top: 0.625rem; color: var(--crit); font-weight: 600; }
+.plan-row .sepc { color: var(--muted); }
+.sub .xy { margin-left: 0.25rem; }
+
+/* Employee change sheet */
+body.lock { overflow: hidden; }
+.btn.wide { width: 100%; margin-top: 1.125rem; }
+.btn.change { background: var(--accent); color: var(--accent-ink); border-color: var(--fg); }
+.pill.ok { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
+.alert-box.pend { background: var(--accent-soft); border-color: var(--accent); }
+.alert-box.pend strong { color: var(--accent-text); }
+.alert-box.pend .linklike { margin-top: 0.375rem; }
+.sheet { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-backdrop { position: absolute; inset: 0; background: rgba(5, 8, 20, 0.62); }
+.sheet-panel {
+  position: relative; width: 100%; max-width: 44rem; max-height: 94%; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--bg); border: 2px solid var(--fg); border-bottom: 0; border-radius: 20px 20px 0 0; outline: none;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(1.25rem + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.sheet-head { position: sticky; top: 0; z-index: 2; background: var(--bg); display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; padding: 1rem 0 0.75rem; border-bottom: 2px solid var(--line); }
+.sheet-head h2 { font-size: 1.5rem; color: var(--fg); letter-spacing: 0.02em; margin: 0; }
+.sheet-sub { color: var(--muted); margin: 2px 0 0; font-size: 0.875rem; }
+.lbl { font-family: var(--font-display); font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-text); margin: 1.125rem 0 0.5rem; }
+.pickrow { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pick { padding: 0.5rem 0.9rem; min-height: 2.5rem; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); font-weight: 600; }
+.pick[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.togs { display: grid; gap: 0.5rem; }
+.tog { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%; text-align: left; padding: 0.7rem 0.9rem; background: var(--surface); border: 2px solid var(--line); border-radius: 14px; }
+.tog .tt { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.tog .td { display: block; color: var(--muted); font-size: 0.8125rem; margin-top: 2px; }
+.tog .sw { flex: none; position: relative; width: 2.75rem; height: 1.5rem; border-radius: 999px; background: var(--surface-2); border: 2px solid var(--line); }
+.tog .sw::after { content: ""; position: absolute; top: 50%; left: 2px; width: 1rem; height: 1rem; transform: translateY(-50%); border-radius: 50%; background: var(--muted); }
+.tog[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.tog.warnish[aria-checked="true"] { border-color: var(--warn); background: var(--warn-soft); }
+.tog[aria-checked="true"] .sw { background: var(--pop); border-color: var(--pop-ink); }
+.tog[aria-checked="true"] .sw::after { left: calc(100% - 1rem - 2px); background: var(--pop-ink); }
+.count { color: var(--muted); font-size: 0.8125rem; margin: 1rem 0 0; }
+.cands { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 0.875rem; margin-top: 0.75rem; }
+.cand { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 0.8rem 0.9rem; box-shadow: 4px 4px 0 var(--shadow); min-width: 0; }
+.cand.dim { opacity: 0.72; box-shadow: none; }
+.cand-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.cand-name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-transform: uppercase; line-height: 1.1; }
+.tier { display: inline-block; margin-top: 0.25rem; font-family: var(--font-data); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 0.5rem; border-radius: 999px; border: 2px solid transparent; }
+.tier.best { background: var(--pop); color: var(--pop-ink); }
+.tier.good { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
+.tier.poss { background: var(--surface-2); color: var(--fg); border-color: var(--line); }
+.tier.none { color: var(--muted); border: 2px dashed var(--line); }
+.reasons { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.5rem; }
+.rs { font-size: 0.75rem; padding: 2px 0.5rem; border-radius: 8px; background: var(--surface-2); }
+.rs.hit { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+.rs.miss { color: var(--muted); }
+.also { font-size: 0.75rem; color: var(--muted); margin: 0.375rem 0 0; }
+.cnote { font-size: 0.8125rem; margin: 0.5rem 0 0; font-weight: 500; }
+.cand-foot { margin-top: 0.625rem; }
+.phone { color: var(--accent-text); font-weight: 500; }
+.cand-actions { display: flex; flex-wrap: wrap; gap: 0.625rem; margin-top: 0.625rem; }
+.empty { margin: 1rem 0 0; padding: 1rem; border: 2px dashed var(--line); border-radius: 16px; color: var(--muted); }
+
+/* Rounded corners */
+.mast { border-radius: 0 0 1.25rem 1.25rem; }
+.badge-demo { border-radius: 999px; padding: 4px 0.625rem; }
+.strip { border-radius: 1rem; overflow: hidden; }
+.row { border-radius: 1rem; }
+.pill { border-radius: 999px; padding: 2px 0.5625rem; }
+.chip { border-radius: 0.375rem; }
+.btn { border-radius: 0.875rem; }
+.icon-btn { border-radius: 0.875rem; }
+.alert-box { border-radius: 1rem; }
+textarea { border-radius: 0.875rem; }
+.day { border-radius: 0.75rem; }
+.tally span { border-radius: 999px; padding: 4px 0.75rem; }
+.plan-row.today { border-radius: 0.75rem; }
+.tabs { border-radius: 1.25rem 1.25rem 0 0; }
+.tab { border-radius: 0.875rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .view { animation: rise 160ms ease-out; }
+  @keyframes rise { from { opacity: 0.4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
+
+/* Compact calendar with the selected night's hotels beside it */
+.splitcal { display: grid; gap: 0.25rem 1.5rem; margin-top: 0.5rem; }
+.splitcal .dow, .splitcal .grid { gap: 3px; }
+.splitcal .day { aspect-ratio: 1 / 0.85; padding: 0.25rem 1px 0.3rem; border-width: 1px; }
+.splitcal .day .n { font-size: 0.75rem; }
+.splitcal .day .xy { font-size: 0.5625rem; padding: 0 0.1875rem; }
+.splitcal .day-list-head { margin-top: 1rem; }
+.splitcal .rows { grid-template-columns: 1fr; }
+@media (min-width: 44rem) {
+  .splitcal { grid-template-columns: minmax(0, 21rem) minmax(0, 1fr); align-items: start; }
+  .splitcal .calcol { position: sticky; top: 5rem; }
+  .splitcal .dow { margin-top: 0.5rem; }
+  .splitcal .day-list-head { margin-top: 0.5rem; }
+}
+</style>
+
+<div class="mast">
+  <div class="brand">Night Board<small>SUPERVISOR</small></div>
+  <span class="badge-demo">Prototype · fake data</span>
+</div>
+<main id="app"></main>
+<nav class="tabs" aria-label="Sections">
+  <button class="tab" id="tab-tonight" data-tab="tonight">Tonight</button>
+  <button class="tab" id="tab-calendar" data-tab="calendar">Calendar</button>
+  <button class="tab" id="tab-overview" data-tab="overview">Overview</button>
+</nav>
+<div id="sheet"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Fake data (invented hotels and people) ---------- */
+  var EMP = {
+    e1: { name: "Anna K.",  phone: "+49 30 555 0101" },
+    e2: { name: "Marek V.", phone: "+49 30 555 0102" },
+    e3: { name: "Jonas B.", phone: "+49 30 555 0103" },
+    e4: { name: "Leila S.", phone: "+49 30 555 0104" },
+    e5: { name: "Tomás R.", phone: "+49 30 555 0105" },
+    e6: { name: "Priya N.", phone: "+49 30 555 0106" },
+    e7: { name: "Felix W.", phone: "+49 30 555 0107" },
+    e8: { name: "Ines D.",  phone: "+49 30 555 0108" },
+    e9: { name: "Oskar L.", phone: "+49 30 555 0109" },
+    e10:{ name: "Mira H.",  phone: "+49 30 555 0110" },
+    e11:{ name: "Sven P.",  phone: "+49 30 555 0111" },
+    e12:{ name: "Hana T.",  phone: "+49 30 555 0112" }
+  };
+
+  /* need = auditors the hotel orders per night. weekendNeed applies on Friday and Saturday nights. */
+  var HOTELS = [
+    { id: "h1", short: "SB", name: "Hotel Spreeblick", pms: "OPERA Cloud", address: "Frankfurter Allee 112, 10247 Berlin",
+      need: 1, weekendNeed: 2,
+      start: "22:00", end: "06:00", dress: "Dark jacket, white shirt, name badge. No sneakers.", phone: "+49 30 555 0201",
+      pool: ["e1","e3","e5","e8","e10"],
+      notes: [
+        { t: "Breakfast shift starts 05:30. Pull the early-arrivals list before you leave.", by: "S. Lindqvist", ago: 1.2 },
+        { t: "Lift 2 is out of service. Guests on floor 6 use lift 1.", by: "R. Okafor", ago: 3.4 }
+      ] },
+    { id: "h2", short: "LL", name: "Linden Lofts", pms: "Mews", address: "Kastanienallee 41, 10435 Berlin",
+      need: 1,
+      start: "21:30", end: "05:30", dress: "Smart casual, company polo shirt.", phone: "+49 30 555 0202",
+      pool: ["e2","e4","e6","e9"],
+      notes: [
+        { t: "Rooftop terrace closes at 23:00. Staff lock it, key is in the front desk drawer.", by: "S. Lindqvist", ago: 2.1 }
+      ] },
+    { id: "h3", short: "AR", name: "Altstadt Residenz", pms: "Protel Air", address: "Nikolaikirchplatz 7, 10178 Berlin",
+      need: 1,
+      start: "22:00", end: "06:00", dress: "Dark trousers, hotel waistcoat provided at the desk.", phone: "+49 30 555 0203",
+      pool: ["e1","e4","e7","e8","e9"],
+      notes: [
+        { t: "Night report goes to the GM by 05:45, not 06:00. Updated this month.", by: "R. Okafor", ago: 0.7 },
+        { t: "Printer in the back office jams on duplex. Print single-sided.", by: "M. Vogel", ago: 5.8 }
+      ] },
+    { id: "h4", short: "KI", name: "Kiez Inn Neukölln", pms: "Apaleo", address: "Weserstraße 88, 12045 Berlin",
+      need: 1,
+      start: "22:30", end: "06:30", dress: "Casual, clean dark clothing. Name badge.", phone: "+49 30 555 0204",
+      pool: ["e2","e3","e6","e10"],
+      notes: [
+        { t: "Front door buzzer is loud after midnight. Mute it from the desk panel.", by: "M. Vogel", ago: 4.0 }
+      ] },
+    { id: "h5", short: "PS", name: "Parkhaus Suites", pms: "SIHOT", address: "Landsberger Allee 200, 10367 Berlin",
+      need: 2,
+      start: "21:00", end: "05:00", dress: "Business casual, jacket on request.", phone: "+49 30 555 0205",
+      pool: ["e5","e7","e9","e10"],
+      notes: [
+        { t: "Car park barrier needs a manual reset after 02:00 if it shows red.", by: "S. Lindqvist", ago: 6.5 }
+      ] },
+    { id: "h6", short: "GH", name: "Gleisdreieck Hotel", pms: "OPERA Cloud", address: "Luckenwalder Straße 4, 10963 Berlin",
+      need: 1,
+      start: "22:00", end: "06:00", dress: "Dark suit jacket, tie optional.", phone: "+49 30 555 0206",
+      pool: ["e6","e8"],
+      notes: [
+        { t: "Small team here. If the night auditor calls in sick, dispatch needs a replacement before 20:00.", by: "R. Okafor", ago: 8.2 }
+      ] }
+  ];
+
+  /* Alerts the office has set for this hotel on a given night (offset in days from tonight). */
+  var ALERTS = [
+    { h: "h2", off: 0, text: "New auditor, first night. Check in around 01:00 and walk through the end-of-day close." },
+    { h: "h4", off: 1, text: "Fire panel service from 23:00. Report any alarms to the technician on site." },
+    { h: "h1", off: 3, text: "Group arrival after 02:00 (coach, 38 rooms). Pre-assign rooms before midnight." },
+    { h: "h3", off: 5, text: "Training night: second person joins until 02:00." }
+  ];
+  /* One-off changes to what the hotel orders. */
+  var NEED_OVERRIDES = [ { h: "h3", off: 5, need: 2 }, { h: "h1", off: 3, need: 2 } ];
+  /* Nights where dispatch has planned fewer people than ordered (flagged for dispatch). */
+  var PLANNED_CAPS = [ { h: "h6", off: 0, planned: 0 }, { h: "h3", off: 2, planned: 0 }, { h: "h5", off: 1, planned: 1 } ];
+
+  /* What each person has worked with. level: daily = uses it regularly, past = used it before.
+     hotels: nights worked at each hotel and how many days ago the last night was. */
+  var EXP = {
+    e1:  { systems: { "OPERA Cloud": "daily", "Protel Air": "past" },                hotels: { h1: { nights: 14, last: 4 },  h3: { nights: 6, last: 20 } } },
+    e2:  { systems: { "Mews": "daily", "Apaleo": "daily" },                         hotels: { h2: { nights: 11, last: 3 },  h4: { nights: 9, last: 12 } } },
+    e3:  { systems: { "OPERA Cloud": "past", "Apaleo": "daily" },                   hotels: { h1: { nights: 3, last: 40 },  h4: { nights: 15, last: 2 } } },
+    e4:  { systems: { "Protel Air": "daily", "Mews": "past" },                      hotels: { h3: { nights: 8, last: 9 },   h2: { nights: 5, last: 30 } } },
+    e5:  { systems: { "SIHOT": "daily", "OPERA Express": "past" },                  hotels: { h5: { nights: 12, last: 5 },  h1: { nights: 2, last: 70 } } },
+    e6:  { systems: { "OPERA Cloud": "daily", "Mews": "daily" },                    hotels: { h6: { nights: 10, last: 6 },  h2: { nights: 4, last: 15 } } },
+    e7:  { systems: { "Protel": "daily", "SIHOT": "past" },                         hotels: { h3: { nights: 2, last: 60 },  h5: { nights: 7, last: 14 } } },
+    e8:  { systems: { "OPERA Cloud": "daily", "Fidelio Suite 8": "past" },          hotels: { h6: { nights: 6, last: 8 },   h1: { nights: 9, last: 11 }, h3: { nights: 1, last: 120 } } },
+    e9:  { systems: { "Protel Air": "daily", "SIHOT": "daily" },                    hotels: { h5: { nights: 4, last: 35 },  h3: { nights: 5, last: 25 } } },
+    e10: { systems: { "Apaleo": "past", "OPERA Cloud": "past", "Mews": "past" },    hotels: { h4: { nights: 3, last: 50 },  h1: { nights: 7, last: 18 }, h5: { nights: 1, last: 90 } } },
+    e11: { systems: { "OPERA Cloud": "daily" },                                     hotels: {} },
+    e12: { systems: { "Apaleo": "past", "Mews": "past" },                           hotels: { h4: { nights: 1, last: 200 } } }
+  };
+  /* Systems that count as related: same product family. */
+  var FAMILY = { "OPERA Cloud": "opera", "OPERA Express": "opera", "Fidelio Suite 8": "opera", "Protel Air": "protel", "Protel": "protel",
+                 "Mews": "mews", "Apaleo": "apaleo", "SIHOT": "sihot" };
+  /* 9-month rule: these people cannot be offered for these hotels. Hard filter, no override. */
+  var RESTRICT = [ { e: "e2", h: "h1" }, { e: "e3", h: "h2" }, { e: "e6", h: "h3" }, { e: "e4", h: "h5" }, { e: "e9", h: "h6" }, { e: "e7", h: "h2" }, { e: "e12", h: "h5" } ];
+
+  /* ---------- Date helpers ---------- */
+  function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function keyOf(d) { return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function diffDays(a, b) { return Math.round((startOfDay(a) - startOfDay(b)) / 86400000); }
+  var now = new Date();
+  /* Before 06:00 the current night still belongs to yesterday. */
+  var tonight = startOfDay(now.getHours() < 6 ? addDays(now, -1) : now);
+  var fmtLong = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  var fmtShort = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  var fmtPlan = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric" });
+  var fmtMonth = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+  var fmtStamp = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+
+  function hash(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0);
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function hotelById(id) { return HOTELS.filter(function (h) { return h.id === id; })[0]; }
+  function firstName(id) { return EMP[id].name.split(" ")[0]; }
+  function isBlocked(k, id) { return hash(k + id) % 9 === 0; }   /* monthly block dates */
+  function isRestricted(id, hotelId) { return RESTRICT.some(function (r) { return r.e === id && r.h === hotelId; }); }
+
+  /* ---------- Rota logic: hard filters first, then pick ---------- */
+  function needFor(hotel, date) {
+    var off = diffDays(date, tonight), dow = date.getDay();
+    var n = hotel.need;
+    if (hotel.weekendNeed && (dow === 5 || dow === 6)) n = hotel.weekendNeed;
+    NEED_OVERRIDES.forEach(function (o) { if (o.h === hotel.id && o.off === off) n = o.need; });
+    return n;
+  }
+
+  var cache = {};
+  function rotaFor(date) {
+    var k = keyOf(date);
+    if (cache[k]) return cache[k];
+    var off = diffDays(date, tonight);
+    var used = {}, byId = {};
+    /* Hotels with the smallest pool pick first, so small teams are not left without anyone. */
+    HOTELS.slice().sort(function (a, b) { return a.pool.length - b.pool.length; }).forEach(function (hotel) {
+      var need = needFor(hotel, date);
+      var cap = need;
+      PLANNED_CAPS.forEach(function (p) { if (p.h === hotel.id && p.off === off) cap = Math.min(cap, p.planned); });
+      var emps = [];
+      for (var s = 0; s < cap; s++) {
+        var start = hash(k + hotel.id + s) % hotel.pool.length;
+        for (var j = 0; j < hotel.pool.length; j++) {
+          var cand = hotel.pool[(start + j) % hotel.pool.length];
+          var blocked = isBlocked(k, cand) || isRestricted(cand, hotel.id);   /* block dates and 9-month rule */
+          if (!blocked && !used[cand]) { emps.push(cand); used[cand] = true; break; }
+        }
+      }
+      var alert = null;
+      ALERTS.forEach(function (a) { if (a.h === hotel.id && a.off === off) alert = a.text; });
+      byId[hotel.id] = { hotel: hotel, need: need, emps: emps, alert: alert };
+    });
+    var out = HOTELS.map(function (h) { return byId[h.id]; });
+    cache[k] = out;
+    return out;
+  }
+  function entryFor(date, hotelId) {
+    return rotaFor(date).filter(function (r) { return r.hotel.id === hotelId; })[0];
+  }
+  function shiftOf(empId, date) {
+    return rotaFor(date).filter(function (r) { return r.emps.indexOf(empId) !== -1; })[0] || null;
+  }
+  function dayTotals(date) {
+    var t = { x: 0, y: 0, alerts: 0 };
+    rotaFor(date).forEach(function (r) { t.x += r.emps.length; t.y += r.need; if (r.alert) t.alerts++; });
+    return t;
+  }
+
+  /* ---------- Notes (kept in memory; new ones are marked unconfirmed) ---------- */
+  var notes = {};
+  HOTELS.forEach(function (h) {
+    notes[h.id] = h.notes.map(function (n) {
+      return { text: n.t, by: n.by, at: new Date(tonight.getTime() - n.ago * 86400000 + 3 * 3600000), fresh: false };
+    });
+  });
+
+  /* ---------- State ---------- */
+  /* view: tonight | calendar | overview | hotel | plan | emp.  root: the tab the user started from.
+     style: table | cal, shared by the hotel plan and the employee plan. */
+  var state = { view: "tonight", root: "tonight", stack: [], style: "table", sheet: null, date: tonight,
+                month: new Date(tonight.getFullYear(), tonight.getMonth(), 1),
+                planMonth: new Date(tonight.getFullYear(), tonight.getMonth(), 1),
+                empMonth: new Date(tonight.getFullYear(), tonight.getMonth(), 1), hotel: null, emp: null };
+  var app = document.getElementById("app");
+  var sheetEl = document.getElementById("sheet");
+  var proposals = [], propSeq = 0;      /* change proposals wait for dispatch; they do not alter the plan */
+  function pendingFor(k, hid) { return proposals.filter(function (p) { return p.k === k && p.h === hid; }); }
+
+  function pushNav() {
+    state.stack.push({ view: state.view, hotel: state.hotel, emp: state.emp, date: state.date,
+                       planMonth: state.planMonth, empMonth: state.empMonth, y: window.scrollY });
+  }
+  function monthOfCurrent() {
+    var base = state.view === "overview" ? state.month : state.view === "plan" ? state.planMonth : state.view === "emp" ? state.empMonth : state.date;
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  }
+
+  /* ---------- Small pieces ---------- */
+  function xyHtml(x, y) {
+    var cls = x >= y ? "full" : x === 0 ? "none" : "part";
+    return '<span class="xy ' + cls + '" aria-label="' + x + ' of ' + y + ' planned">' + x + '/' + y + '</span>';
+  }
+  function whoMeta(r) {
+    var open = r.need - r.emps.length;
+    if (!r.emps.length) return '<span class="person gap">Nobody assigned</span>';
+    return '<span class="person">' + r.emps.map(function (id) { return esc(EMP[id].name); }).join(", ") + '</span>' +
+      (open > 0 ? '<span class="person gap">' + open + ' open</span>' : "");
+  }
+  function segHtml() {
+    return '<div class="seg" role="group" aria-label="View style">' +
+      '<button data-style="table" aria-pressed="' + (state.style === "table") + '">Table</button>' +
+      '<button data-style="cal" aria-pressed="' + (state.style === "cal") + '">Calendar</button></div>';
+  }
+  function barHtml() {
+    return '<div class="bar"><button class="back" data-back="1">&#8592; Back</button>' + segHtml() + '</div>';
+  }
+
+  function rowsHtml(date) {
+    var list = rotaFor(date).slice().sort(function (a, b) {
+      function rank(r) { return !r.emps.length ? 0 : r.emps.length < r.need ? 1 : r.alert ? 2 : 3; }
+      return rank(a) - rank(b) || a.hotel.start.localeCompare(b.hotel.start);
+    });
+    return '<div class="rows">' + list.map(function (r) {
+      return '<button class="row" data-hotel="' + r.hotel.id + '" data-date="' + keyOf(date) + '">' +
+        '<div><div class="name">' + esc(r.hotel.name) + '</div>' +
+        '<div class="meta">' + whoMeta(r) + '<span class="chip">' + esc(r.hotel.pms) + '</span></div></div>' +
+        '<div class="side">' + xyHtml(r.emps.length, r.need) + (r.alert ? '<span class="pill warn">Alert</span>' : "") +
+        (pendingFor(keyOf(date), r.hotel.id).length ? '<span class="pill neutral">Change pending</span>' : "") +
+        '<span class="time">' + r.hotel.start + '–' + r.hotel.end + '</span></div>' +
+        '</button>';
+    }).join("") + '</div>';
+  }
+
+  function statsHtml(date) {
+    var t = dayTotals(date);
+    return '<div class="strip">' +
+      '<div><b>' + HOTELS.length + '</b><span>Hotels</span></div>' +
+      '<div class="' + (t.alerts ? "is-warn" : "") + '"><b>' + t.alerts + '</b><span>Alerts</span></div>' +
+      '<div class="' + (t.x < t.y ? "is-crit" : "") + '"><b>' + t.x + '/' + t.y + '</b><span>Planned</span></div>' +
+      '</div>';
+  }
+
+  function mapsUrl(h) {
+    return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(h.name + ", " + h.address);
+  }
+  function telHref(p) { return "tel:" + p.replace(/[^+\d]/g, ""); }
+  function monthGridStart(y, m) { return (new Date(y, m, 1).getDay() + 6) % 7; }   /* Monday first */
+  var DOW = '<div class="dow"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>';
+
+  /* ---------- Views ---------- */
+  function renderTonight() {
+    return '<section class="view">' +
+      '<h2>Tonight</h2>' +
+      '<h1>' + fmtLong.format(tonight) + '</h1>' +
+      '<p class="sub">Shifts run between 21:00 and 06:30. Badges show planned / ordered.</p>' +
+      statsHtml(tonight) + rowsHtml(tonight) +
+      '</section>';
+  }
+
+  function renderCalendar() {
+    var y = state.month.getFullYear(), m = state.month.getMonth();
+    var days = new Date(y, m + 1, 0).getDate();
+    var cells = "";
+    for (var i = 0; i < monthGridStart(y, m); i++) cells += '<div class="day out"></div>';
+    for (var d = 1; d <= days; d++) {
+      var date = new Date(y, m, d);
+      var t = dayTotals(date);
+      var cls = "day" + (keyOf(date) === keyOf(tonight) ? " today" : "") + (keyOf(date) === keyOf(state.date) ? " sel" : "");
+      cells += '<button class="' + cls + '" data-day="' + keyOf(date) + '" aria-label="' + fmtLong.format(date) + ', ' + t.x + ' of ' + t.y + ' planned">' +
+        '<span class="n">' + d + '</span>' + xyHtml(t.x, t.y) +
+        '<span class="dots">' + (t.alerts ? '<i class="dot warn"></i>' : "") + '</span></button>';
+    }
+    return '<section class="view">' +
+      '<div class="cal-head"><button class="icon-btn" data-month="-1" aria-label="Previous month">&#8249;</button>' +
+      '<h1>' + fmtMonth.format(state.month) + '</h1>' +
+      '<button class="icon-btn" data-month="1" aria-label="Next month">&#8250;</button></div>' +
+      '<div class="splitcal"><div class="calcol">' + DOW + '<div class="grid">' + cells + '</div>' +
+      '<div class="legend"><span><i class="dot warn"></i> Alert set by office</span><span>Badge = planned / ordered, all hotels</span></div></div>' +
+      '<div class="daycol"><div class="day-list-head"><h2>Selected night</h2><h1 style="font-size:1.625rem">' + fmtLong.format(state.date) + '</h1></div>' +
+      statsHtml(state.date) + rowsHtml(state.date) + '</div></div>' +
+      '</section>';
+  }
+
+  function renderOverview() {
+    var y = state.month.getFullYear(), m = state.month.getMonth();
+    var days = new Date(y, m + 1, 0).getDate();
+    var hs = {}, empCount = {};
+    HOTELS.forEach(function (h) { hs[h.id] = { x: 0, y: 0, alerts: 0 }; });
+    Object.keys(EMP).forEach(function (id) { empCount[id] = 0; });
+    for (var d = 1; d <= days; d++) {
+      rotaFor(new Date(y, m, d)).forEach(function (r) {
+        hs[r.hotel.id].x += r.emps.length; hs[r.hotel.id].y += r.need;
+        if (r.alert) hs[r.hotel.id].alerts++;
+        r.emps.forEach(function (id) { empCount[id]++; });
+      });
+    }
+    var hotelRows = HOTELS.map(function (h) {
+      var s = hs[h.id], open = s.y - s.x;
+      return '<button class="row" data-plan="' + h.id + '"><div><div class="name">' + esc(h.name) + '</div>' +
+        '<div class="meta"><span class="chip">' + esc(h.pms) + '</span><span>' + s.x + ' of ' + s.y + ' shifts planned</span></div></div>' +
+        '<div class="side">' + (open > 0 ? '<span class="pill crit">' + open + ' open</span>' : "") +
+        (s.alerts ? '<span class="pill warn">' + s.alerts + ' alert' + (s.alerts > 1 ? "s" : "") + '</span>' : "") + '</div></button>';
+    }).join("");
+    var empRows = Object.keys(EMP).sort(function (a, b) { return EMP[a].name.localeCompare(EMP[b].name); }).map(function (id) {
+      var tn = shiftOf(id, tonight);
+      return '<button class="row" data-emp="' + id + '"><div><div class="name">' + esc(EMP[id].name) + '</div>' +
+        '<div class="meta"><span>' + (tn ? 'Tonight: ' + esc(tn.hotel.name) : 'Off tonight') + '</span></div></div>' +
+        '<div class="side"><span class="time">' + empCount[id] + ' shifts</span></div></button>';
+    }).join("");
+    return '<section class="view">' +
+      '<h2>Overview</h2>' +
+      '<div class="cal-head"><button class="icon-btn" data-month="-1" aria-label="Previous month">&#8249;</button>' +
+      '<h1>' + fmtMonth.format(state.month) + '</h1>' +
+      '<button class="icon-btn" data-month="1" aria-label="Next month">&#8250;</button></div>' +
+      '<p class="sub" style="text-align:center">All hotels and all employees for the month.</p>' +
+      '<div class="sect"><h2>Hotels</h2><div class="rows">' + hotelRows + '</div></div>' +
+      '<div class="sect"><h2>Employees</h2><div class="rows">' + empRows + '</div></div>' +
+      '</section>';
+  }
+
+  function renderHotel() {
+    var date = state.date;
+    var r = entryFor(date, state.hotel);
+    var h = r.hotel, x = r.emps.length, y = r.need, open = y - x;
+    var assigned;
+    if (x) {
+      assigned = r.emps.map(function (id) {
+        var e = EMP[id];
+        return '<div class="person-block"><div class="assigned-name">' + esc(e.name) + '</div>' +
+          '<div class="links"><a href="' + telHref(e.phone) + '" class="mono">' + esc(e.phone) + '</a>' +
+          '<button class="linklike" data-copy="' + esc(e.phone) + '">Copy number</button>' +
+          '<button class="linklike" data-emp="' + id + '">Their plan</button></div></div>';
+      }).join("") + (open > 0 ? '<div class="open-line">' + open + ' more needed. Dispatch is flagged.</div>' : "");
+    } else {
+      assigned = '<span class="person gap">Nobody assigned yet. Dispatch is flagged.</span>';
+    }
+    var banner = "";
+    if (!x) banner += '<div class="alert-box crit"><strong>Uncovered shift</strong><p>No auditor is assigned for this night. Ask dispatch for a replacement list.</p></div>';
+    else if (open > 0) banner += '<div class="alert-box crit"><strong>Short by ' + open + '</strong><p>' + x + ' planned, ' + y + ' ordered by the hotel.</p></div>';
+    if (r.alert) banner += '<div class="alert-box"><strong>Go there ' + (diffDays(date, tonight) === 0 ? "tonight" : "on " + fmtShort.format(date)) + '</strong><p>' + esc(r.alert) + '</p></div>';
+
+    pendingFor(keyOf(date), h.id).forEach(function (p) {
+      banner += '<div class="alert-box pend"><strong>Change proposed</strong><p>' + esc(EMP[p.inn].name) +
+        (p.out ? ' replaces ' + esc(EMP[p.out].name) : ' fills an open slot') + '. Waiting for dispatch.</p>' +
+        '<button class="linklike" data-withdraw="' + p.id + '">Withdraw</button></div>';
+    });
+
+    var noteHtml = notes[h.id].map(function (n) {
+      return '<div class="note"><p>' + esc(n.text) + '</p><div class="by"><span>' + esc(n.by) + '</span><span>' + fmtStamp.format(n.at) + '</span>' +
+        (n.fresh ? '<span class="pill warn">Unconfirmed</span>' : "") + '</div></div>';
+    }).join("");
+
+    return '<section class="view">' +
+      '<button class="back" data-back="1">&#8592; Back</button>' +
+      '<h1 style="margin-top:6px">' + esc(h.name) + '</h1>' +
+      '<p class="sub">' + fmtLong.format(date) + ' · <span class="mono">' + h.start + '–' + h.end + '</span> ' + xyHtml(x, y) + '</p>' +
+      banner +
+      '<button class="btn wide change" data-sheet="1">Employee change</button>' +
+      '<div class="actions"><a class="btn primary" href="' + mapsUrl(h) + '" target="_blank" rel="noopener">Open in Maps</a>' +
+      '<button class="btn" data-plan="' + h.id + '">Monthly plan</button></div>' +
+      '<dl class="facts">' +
+        '<div><dt>Address</dt><dd>' + esc(h.address) + '</dd></div>' +
+        '<div><dt>Shift timings</dt><dd class="mono">' + h.start + ' – ' + h.end + '</dd></div>' +
+        '<div><dt>Staffing</dt><dd>' + xyHtml(x, y) + ' <span class="fine" style="margin:0 0 0 6px">planned of ordered</span></dd></div>' +
+        '<div><dt>Dress code</dt><dd>' + esc(h.dress) + '</dd></div>' +
+        '<div><dt>PMS</dt><dd><span class="chip">' + esc(h.pms) + '</span></dd></div>' +
+        '<div><dt>Assigned</dt><dd>' + assigned + '</dd></div>' +
+        '<div><dt>Front desk</dt><dd><a href="' + telHref(h.phone) + '" class="mono">' + esc(h.phone) + '</a><button class="copy" data-copy="' + esc(h.phone) + '">Copy</button></dd></div>' +
+        '<div><dt>Logins</dt><dd>In the vault. Not shown in this demo.</dd></div>' +
+      '</dl>' +
+      '<div class="notes-head"><h2>Hotel notes</h2><span class="fine mono" style="margin:0">' + notes[h.id].length + ' entries</span></div>' +
+      '<form class="note-form" id="note-form">' +
+        '<textarea id="note-text" placeholder="New door code, changed checklist, something the next supervisor should know" aria-label="New note"></textarea>' +
+        '<button class="btn" type="submit">Add note</button>' +
+      '</form>' +
+      '<p class="fine">Notes go live at once with your name and the time. Dispatch confirms them later.</p>' +
+      noteHtml +
+      '</section>';
+  }
+
+  function renderPlan() {
+    var h = hotelById(state.hotel);
+    var y = state.planMonth.getFullYear(), m = state.planMonth.getMonth();
+    var days = new Date(y, m + 1, 0).getDate();
+    var tally = {}, fullNights = 0, alerts = 0, sx = 0, sy = 0, rows = "", cells = "";
+    for (var i = 0; i < monthGridStart(y, m); i++) cells += '<div class="day out"></div>';
+    for (var d = 1; d <= days; d++) {
+      var date = new Date(y, m, d);
+      var r = entryFor(date, h.id);
+      var x = r.emps.length, open = r.need - x;
+      r.emps.forEach(function (id) { tally[id] = (tally[id] || 0) + 1; });
+      sx += x; sy += r.need;
+      if (open <= 0) fullNights++;
+      if (r.alert) alerts++;
+      var dow = date.getDay();
+      var isToday = keyOf(date) === keyOf(tonight);
+
+      var cls = "plan-row" + (isToday ? " today" : "") + (dow === 0 || dow === 6 ? " weekend" : "");
+      var whoHtml = x
+        ? '<span class="who">' + r.emps.map(function (id) { return '<button class="who-btn" data-emp="' + id + '">' + esc(EMP[id].name) + '</button>'; }).join('<span class="sepc">, </span>') +
+          (open > 0 ? ' <span class="person gap">' + open + ' open</span>' : "") + '</span>'
+        : '<span class="who person gap">Nobody assigned</span>';
+      rows += '<div class="' + cls + '"><span class="d">' + fmtPlan.format(date) + '</span>' + whoHtml +
+        '<span class="end">' + xyHtml(x, r.need) + (r.alert ? '<span class="pill warn">Alert</span>' : "") +
+        '<button class="open" data-hotel="' + h.id + '" data-date="' + keyOf(date) + '" aria-label="Open hotel page for ' + fmtLong.format(date) + '">&#8250;</button></span></div>';
+
+      cells += '<button class="day' + (isToday ? " today" : "") + '" data-hotel="' + h.id + '" data-date="' + keyOf(date) + '" aria-label="' + fmtLong.format(date) + ', ' + x + ' of ' + r.need + ' planned">' +
+        '<span class="n">' + d + '</span>' +
+        '<span class="names">' + (x ? r.emps.map(function (id) { return '<span>' + esc(firstName(id)) + '</span>'; }).join("") : '<span class="nobody">Nobody</span>') + '</span>' +
+        '<span class="foot">' + xyHtml(x, r.need) + (r.alert ? '<i class="dot warn"></i>' : "") + '</span></button>';
+    }
+    var tallyHtml = Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (id) {
+      return '<span>' + esc(EMP[id].name) + '<b>' + tally[id] + '</b></span>';
+    }).join("");
+    var body = state.style === "cal"
+      ? DOW + '<div class="grid tall">' + cells + '</div><div class="legend"><span><i class="dot warn"></i> Alert set by office</span><span>Badge = planned / ordered</span></div><p class="fine">Tap a day to open the hotel page for that night.</p>'
+      : '<div class="plan">' + rows + '</div><p class="fine">Tap a name for that person’s plan. Tap the arrow to open the hotel page for that night.</p>';
+    return '<section class="view">' + barHtml() +
+      '<h2 style="margin-top:8px">Monthly plan</h2>' +
+      '<div class="cal-head"><button class="icon-btn" data-planmonth="-1" aria-label="Previous month">&#8249;</button>' +
+      '<h1>' + fmtMonth.format(state.planMonth) + '</h1>' +
+      '<button class="icon-btn" data-planmonth="1" aria-label="Next month">&#8250;</button></div>' +
+      '<p class="sub" style="text-align:center">' + esc(h.name) + ' · <span class="mono">' + h.start + '–' + h.end + '</span></p>' +
+      '<div class="strip">' +
+        '<div><b>' + fullNights + '/' + days + '</b><span>Full nights</span></div>' +
+        '<div class="' + (alerts ? "is-warn" : "") + '"><b>' + alerts + '</b><span>Alerts</span></div>' +
+        '<div class="' + (sx < sy ? "is-crit" : "") + '"><b>' + sx + '/' + sy + '</b><span>Planned</span></div></div>' +
+      '<div class="tally">' + tallyHtml + '</div>' + body +
+      '</section>';
+  }
+
+  function renderEmp() {
+    var e = EMP[state.emp];
+    var y = state.empMonth.getFullYear(), m = state.empMonth.getMonth();
+    var days = new Date(y, m + 1, 0).getDate();
+    var shifts = 0, byHotel = {}, used = {}, rows = "", cells = "";
+    for (var i = 0; i < monthGridStart(y, m); i++) cells += '<div class="day out"></div>';
+    for (var d = 1; d <= days; d++) {
+      var date = new Date(y, m, d);
+      var s = shiftOf(state.emp, date);
+      var dow = date.getDay();
+      var isToday = keyOf(date) === keyOf(tonight);
+      var cls = "plan-row" + (isToday ? " today" : "") + (dow === 0 || dow === 6 ? " weekend" : "");
+      if (s) {
+        shifts++; byHotel[s.hotel.name] = (byHotel[s.hotel.name] || 0) + 1; used[s.hotel.id] = true;
+        rows += '<button class="' + cls + '" data-hotel="' + s.hotel.id + '" data-date="' + keyOf(date) + '">' +
+          '<span class="d">' + fmtPlan.format(date) + '</span><span class="who">' + esc(s.hotel.name) + '</span>' +
+          '<span class="end"><span class="t">' + s.hotel.start + '–' + s.hotel.end + '</span>' + (s.alert ? '<span class="pill warn">Alert</span>' : "") + '</span></button>';
+        cells += '<button class="day' + (isToday ? " today" : "") + '" data-hotel="' + s.hotel.id + '" data-date="' + keyOf(date) + '" aria-label="' + fmtLong.format(date) + ', ' + esc(s.hotel.name) + '">' +
+          '<span class="n">' + d + '</span><span class="code">' + s.hotel.short + '</span>' +
+          '<span class="foot">' + (s.alert ? '<i class="dot warn"></i>' : "") + '</span></button>';
+      } else {
+        rows += '<div class="' + cls + ' off"><span class="d">' + fmtPlan.format(date) + '</span><span class="who">Off</span><span></span></div>';
+        cells += '<div class="day offcell' + (isToday ? " today" : "") + '"><span class="n">' + d + '</span><span class="offtxt">Off</span><span class="foot"></span></div>';
+      }
+    }
+    var tallyHtml = Object.keys(byHotel).sort(function (a, b) { return byHotel[b] - byHotel[a]; }).map(function (n) {
+      return '<span>' + esc(n) + '<b>' + byHotel[n] + '</b></span>';
+    }).join("");
+    var codes = HOTELS.filter(function (h) { return used[h.id]; }).map(function (h) {
+      return '<span><b class="code">' + h.short + '</b> ' + esc(h.name) + '</span>';
+    }).join("");
+    var body = state.style === "cal"
+      ? DOW + '<div class="grid tall">' + cells + '</div><div class="legend">' + codes + '</div><p class="fine">Tap a day to open that hotel page.</p>'
+      : '<div class="plan">' + rows + '</div><p class="fine">Tap a night to open that hotel page.</p>';
+    return '<section class="view">' + barHtml() +
+      '<h2 class="emp-head">Employee plan</h2>' +
+      '<h1>' + esc(e.name) + '</h1>' +
+      '<div class="links" style="margin-top:8px"><a href="' + telHref(e.phone) + '" class="mono">' + esc(e.phone) + '</a>' +
+      '<button class="linklike" data-copy="' + esc(e.phone) + '">Copy number</button></div>' +
+      '<div class="cal-head" style="margin-top:18px"><button class="icon-btn" data-empmonth="-1" aria-label="Previous month">&#8249;</button>' +
+      '<h1 style="font-size:1.625rem">' + fmtMonth.format(state.empMonth) + '</h1>' +
+      '<button class="icon-btn" data-empmonth="1" aria-label="Next month">&#8250;</button></div>' +
+      '<div class="strip">' +
+        '<div><b>' + shifts + '</b><span>Shifts</span></div>' +
+        '<div><b>' + (days - shifts) + '</b><span>Days off</span></div>' +
+        '<div><b>' + Object.keys(byHotel).length + '</b><span>Hotels</span></div></div>' +
+      '<div class="tally">' + tallyHtml + '</div>' + body +
+      '</section>';
+  }
+
+  /* ---------- Employee change: ranked replacements for one hotel night ---------- */
+  function agoText(d) {
+    if (d <= 0) return "today";
+    if (d === 1) return "yesterday";
+    if (d < 60) return d + " days ago";
+    return Math.round(d / 30) + " months ago";
+  }
+
+  /* Software and hotel experience, with the reasons that produced the score. */
+  function matchFor(empId, hotel) {
+    var sys = EXP[empId].systems, pts = 0, soft = null;
+    if (sys[hotel.pms]) {
+      soft = { kind: "same", name: hotel.pms, level: sys[hotel.pms] };
+      pts += sys[hotel.pms] === "daily" ? 40 : 25;
+    } else {
+      var fam = FAMILY[hotel.pms];
+      Object.keys(sys).forEach(function (n) {
+        if (fam && FAMILY[n] === fam && (!soft || sys[n] === "daily")) soft = { kind: "related", name: n, level: sys[n] };
+      });
+      if (soft) pts += soft.level === "daily" ? 20 : 12;
+    }
+    var hx = EXP[empId].hotels[hotel.id] || null;
+    if (hx) pts += Math.min(40, hx.nights * 2.5) + (hx.last <= 30 ? 10 : hx.last <= 90 ? 5 : 0);
+    return { soft: soft, hotel: hx, score: pts };
+  }
+
+  /* Everyone who could cover this night. The 9-month rule removes people before any filter runs. */
+  function candidates(date, hotelId, outId) {
+    var hotel = hotelById(hotelId), k = keyOf(date), r = entryFor(date, hotelId);
+    var list = [], hidden = 0;
+    Object.keys(EMP).forEach(function (id) {
+      if (id === outId || r.emps.indexOf(id) !== -1) return;
+      if (isRestricted(id, hotelId)) { hidden++; return; }
+      var where = shiftOf(id, date);
+      list.push({ id: id, m: matchFor(id, hotel), where: where ? where.hotel : null,
+                  status: where ? "elsewhere" : isBlocked(k, id) ? "blocked" : "free" });
+    });
+    return { list: list, hidden: hidden };
+  }
+
+  function candHtml(c, date) {
+    var e = EMP[c.id], m = c.m, h = hotelById(state.hotel);
+    var tier = m.score >= 70 ? ["best", "Best match"] : m.score >= 40 ? ["good", "Good fit"] : m.score > 0 ? ["poss", "Possible"] : ["none", "No match"];
+    var pill = c.status === "free" ? '<span class="pill ok">Free</span>'
+      : c.status === "blocked" ? '<span class="pill crit">Gesperrt</span>' : '<span class="pill neutral">Working</span>';
+    var soft = m.soft
+      ? '<span class="rs hit">' + (m.soft.kind === "same" ? "Same system" : "Related system") + ' · ' + esc(m.soft.name) + ' · ' + m.soft.level + '</span>'
+      : '<span class="rs miss">No ' + esc(h.pms) + ' experience</span>';
+    var hot = m.hotel
+      ? '<span class="rs hit">Hotel · ' + m.hotel.nights + ' nights · ' + agoText(m.hotel.last) + '</span>'
+      : '<span class="rs miss">Never worked here</span>';
+    var sys = EXP[c.id].systems;
+    var others = Object.keys(sys).filter(function (n) { return !m.soft || n !== m.soft.name; })
+      .map(function (n) { return esc(n) + ' (' + sys[n] + ')'; });
+    var note = c.status === "blocked" ? '<p class="cnote">Blocked this date. You would be asking for a favour.</p>'
+      : c.status === "elsewhere" ? '<p class="cnote">Working at ' + esc(c.where.name) + (diffDays(date, tonight) === 0 ? ' tonight.' : ' that night.') + '</p>' : "";
+    return '<article class="cand' + (c.status === "elsewhere" ? " dim" : "") + '">' +
+      '<div class="cand-top"><div><div class="cand-name">' + esc(e.name) + '</div><span class="tier ' + tier[0] + '">' + tier[1] + '</span></div>' + pill + '</div>' +
+      '<div class="reasons">' + soft + hot + '</div>' +
+      (others.length ? '<p class="also">Also knows: ' + others.join(", ") + '</p>' : "") + note +
+      '<div class="cand-foot"><a class="mono phone" href="' + telHref(e.phone) + '">' + esc(e.phone) + '</a></div>' +
+      '<div class="cand-actions"><button class="btn small" data-copy="' + esc(e.phone) + '">Copy number</button>' +
+      (c.status === "elsewhere" ? "" : '<button class="btn small primary" data-propose="' + c.id + '">Propose</button>') + '</div></article>';
+  }
+
+  function sheetHtml() {
+    var s = state.sheet, date = state.date;
+    var r = entryFor(date, state.hotel), h = r.hotel, open = r.need - r.emps.length;
+    var outId = s.out === "slot" ? null : s.out;
+    var picks = r.emps.map(function (id) {
+      return '<button class="pick" data-out="' + id + '" aria-pressed="' + (s.out === id) + '">' + esc(EMP[id].name) + '</button>';
+    }).join("");
+    if (open > 0) picks += '<button class="pick" data-out="slot" aria-pressed="' + (s.out === "slot") + '">Open slot' + (open > 1 ? "s" : "") + '</button>';
+
+    var res = candidates(date, h.id, outId);
+    function rank(c) { return c.status === "free" ? 0 : c.status === "blocked" ? 1 : 2; }
+    var shown = res.list.filter(function (c) {
+      return (!s.soft || c.m.soft) && (!s.hot || c.m.hotel) && (c.status !== "blocked" || s.blocked);
+    }).sort(function (a, b) {
+      return rank(a) - rank(b) || b.m.score - a.m.score || EMP[a.id].name.localeCompare(EMP[b.id].name);
+    });
+    var nFree = shown.filter(function (c) { return c.status === "free"; }).length;
+    var nBlocked = shown.filter(function (c) { return c.status === "blocked"; }).length;
+    var nElse = shown.filter(function (c) { return c.status === "elsewhere"; }).length;
+    var summary = nFree + ' free' + (s.blocked ? ', ' + nBlocked + ' gesperrt' : '') + (nElse ? ', ' + nElse + ' working elsewhere' : '') +
+      (res.hidden ? '. ' + res.hidden + ' hidden by the 9-month rule' : '');
+
+    function tog(key, title, desc, extra) {
+      return '<button class="tog' + (extra || "") + '" role="switch" aria-checked="' + !!s[key] + '" data-tog="' + key + '">' +
+        '<span><span class="tt">' + title + '</span><span class="td">' + desc + '</span></span><span class="sw" aria-hidden="true"></span></button>';
+    }
+    return '<div class="sheet"><div class="sheet-backdrop" data-close="1"></div>' +
+      '<section class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">' +
+      '<div class="sheet-head"><div><h2 id="sheet-title">Employee change</h2>' +
+      '<p class="sheet-sub">' + esc(h.name) + ' · ' + fmtShort.format(date) + ' · ' + h.start + '–' + h.end + '</p></div>' +
+      '<button class="icon-btn" data-close="1" aria-label="Close">&#10005;</button></div>' +
+      '<h3 class="lbl">Replace</h3><div class="pickrow">' + picks + '</div>' +
+      '<h3 class="lbl">Match by</h3><div class="togs">' +
+        tog("soft", "Software experience", "Knows " + esc(h.pms) + " or a related system") +
+        tog("hot", "Hotel experience", "Has worked at " + esc(h.name)) +
+        tog("blocked", "Gesperrt", "Also show people who blocked this date", " warnish") +
+      '</div>' +
+      '<p class="count">' + summary + '</p>' +
+      (shown.length ? '<div class="cands">' + shown.map(function (c) { return candHtml(c, date); }).join("") + '</div>'
+        : '<p class="empty">No one matches. Turn off a filter, or switch on Gesperrt to include people who blocked this date.</p>') +
+      '<p class="fine">Proposals go to dispatch. Nothing changes in the plan until they confirm. The 9-month rule is a hard filter and cannot be overridden here.</p>' +
+      '</section></div>';
+  }
+
+  function renderSheet() {
+    var s = state.sheet;
+    if (document.body && document.body.classList) document.body.classList.toggle("lock", !!s);
+    if (!s) { sheetEl.innerHTML = ""; return; }
+    var old = sheetEl.querySelector ? sheetEl.querySelector(".sheet-panel") : null;
+    var top = old ? old.scrollTop : 0;
+    sheetEl.innerHTML = sheetHtml();
+    var p = sheetEl.querySelector ? sheetEl.querySelector(".sheet-panel") : null;
+    if (p) {
+      p.scrollTop = top;
+      if (s.fresh) { s.fresh = false; if (p.focus) p.focus({ preventScroll: true }); }
+    }
+  }
+  function openSheet() {
+    var r = entryFor(state.date, state.hotel), open = r.need - r.emps.length;
+    state.sheet = { out: (open > 0 || !r.emps.length) ? "slot" : r.emps[0], soft: false, hot: false, blocked: false, fresh: true };
+    renderSheet();
+  }
+  function closeSheet() { state.sheet = null; renderSheet(); }
+  function propose(inn) {
+    var s = state.sheet, k = keyOf(state.date);
+    var dup = proposals.some(function (p) { return p.k === k && p.h === state.hotel && p.inn === inn; });
+    if (!dup) proposals.push({ id: ++propSeq, k: k, h: state.hotel, out: s.out === "slot" ? null : s.out, inn: inn });
+    closeSheet(); render(); window.scrollTo(0, 0);
+  }
+
+  function render() {
+    var html = state.view === "tonight" ? renderTonight() : state.view === "calendar" ? renderCalendar() : state.view === "overview" ? renderOverview()
+      : state.view === "plan" ? renderPlan() : state.view === "emp" ? renderEmp() : renderHotel();
+    app.innerHTML = html;
+    ["tonight", "calendar", "overview"].forEach(function (t) {
+      var el = document.getElementById("tab-" + t);
+      if (t === state.root) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
+    });
+  }
+
+  function parseKey(k) { var p = k.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+
+  /* ---------- Events ---------- */
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-tab],[data-hotel],[data-day],[data-month],[data-planmonth],[data-empmonth],[data-plan],[data-emp],[data-style],[data-back],[data-copy],[data-sheet],[data-close],[data-out],[data-tog],[data-propose],[data-withdraw]");
+    if (!t) return;
+    if (t.dataset.tab) {
+      state.stack = [];
+      state.view = t.dataset.tab; state.root = t.dataset.tab;
+      if (state.view === "tonight") state.date = tonight;
+      render(); window.scrollTo(0, 0);
+    } else if (t.dataset.sheet) {
+      openSheet();
+    } else if (t.dataset.close) {
+      closeSheet();
+    } else if (t.dataset.out) {
+      state.sheet.out = t.dataset.out; renderSheet();
+    } else if (t.dataset.tog) {
+      state.sheet[t.dataset.tog] = !state.sheet[t.dataset.tog]; renderSheet();
+    } else if (t.dataset.propose) {
+      propose(t.dataset.propose);
+    } else if (t.dataset.withdraw) {
+      var wid = +t.dataset.withdraw;
+      proposals = proposals.filter(function (p) { return p.id !== wid; });
+      render();
+    } else if (t.dataset.style) {
+      state.style = t.dataset.style; render();
+    } else if (t.dataset.hotel) {
+      pushNav();                                     /* Back returns to the screen the tap came from */
+      state.date = parseKey(t.dataset.date); state.hotel = t.dataset.hotel; state.view = "hotel";
+      render(); window.scrollTo(0, 0);
+    } else if (t.dataset.plan) {
+      pushNav();
+      state.planMonth = monthOfCurrent(); state.hotel = t.dataset.plan;
+      state.view = "plan"; render(); window.scrollTo(0, 0);
+    } else if (t.dataset.emp) {
+      pushNav();
+      state.empMonth = monthOfCurrent(); state.emp = t.dataset.emp;
+      state.view = "emp"; render(); window.scrollTo(0, 0);
+    } else if (t.dataset.empmonth) {
+      state.empMonth = new Date(state.empMonth.getFullYear(), state.empMonth.getMonth() + (+t.dataset.empmonth), 1); render();
+    } else if (t.dataset.day) {
+      state.date = parseKey(t.dataset.day); render();
+    } else if (t.dataset.month) {
+      state.month = new Date(state.month.getFullYear(), state.month.getMonth() + (+t.dataset.month), 1); render();
+    } else if (t.dataset.planmonth) {
+      state.planMonth = new Date(state.planMonth.getFullYear(), state.planMonth.getMonth() + (+t.dataset.planmonth), 1); render();
+    } else if (t.dataset.back) {
+      var prev = state.stack.pop();
+      if (prev) {
+        state.view = prev.view; state.hotel = prev.hotel; state.emp = prev.emp; state.date = prev.date;
+        state.planMonth = prev.planMonth; state.empMonth = prev.empMonth;
+      } else state.view = state.root;
+      render(); window.scrollTo(0, prev ? prev.y : 0);
+    } else if (t.dataset.copy) {
+      var text = t.dataset.copy, btn = t, label = btn.textContent;
+      var done = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = label; }, 1400); };
+      try { navigator.clipboard.writeText(text).then(done, function () { btn.textContent = "Select number"; }); }
+      catch (err) { btn.textContent = "Select number"; }
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && state.sheet) closeSheet();
+  });
+
+  document.addEventListener("submit", function (e) {
+    if (e.target.id !== "note-form") return;
+    e.preventDefault();
+    var ta = document.getElementById("note-text");
+    var text = ta.value.trim();
+    if (!text) { ta.focus(); return; }
+    notes[state.hotel].unshift({ text: text, by: "You (demo)", at: new Date(), fresh: true });
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body></html>
