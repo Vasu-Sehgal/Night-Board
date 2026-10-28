@@ -4,7 +4,7 @@ services:
     image: night-board:latest
     container_name: night-board
     ports:
-      - "${PORT:-8080}:80"
+      - "${PORT:-8095}:80"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
