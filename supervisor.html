@@ -413,6 +413,38 @@ textarea { border-radius: 0.875rem; }
   .splitcal .dow { margin-top: 0.5rem; }
   .splitcal .day-list-head { margin-top: 0.5rem; }
 }
+
+/* Sheet view (Auftragsbestätigung) */
+.sheetdoc { margin-top: 1rem; background: var(--surface); border: 2px solid var(--fg); border-radius: 0.75rem; padding: 1rem; box-shadow: 4px 4px 0 var(--shadow); font-size: 0.8125rem; line-height: 1.5; }
+.sd-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem; }
+.sd-title { font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; }
+.sd-cols { display: grid; gap: 0.875rem 2rem; margin-top: 0.875rem; }
+@media (min-width: 40rem) { .sd-cols { grid-template-columns: 1fr 1fr; } }
+.sd-blk b { display: block; } .sd-blk b.in { display: inline; }
+.sd-p { margin: 0.875rem 0 0.5rem; }
+.sd-scroll { overflow-x: auto; border: 1px solid var(--line); }
+table.sd { border-collapse: collapse; font-family: var(--font-data); font-size: 0.6875rem; min-width: 100%; }
+.sd th, .sd td { border: 1px solid var(--line); text-align: center; min-width: 1.4rem; height: 1.75rem; padding: 0; font-weight: 500; }
+.sd th.nm, .sd td.nm { position: sticky; left: 0; z-index: 1; background: var(--surface); text-align: left; padding: 0 0.5rem; min-width: 7.5rem; max-width: 7.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-body); font-size: 0.8125rem; border-right: 2px solid var(--fg); }
+.sd th.nm { font-weight: 700; }
+.sd .we { background: var(--accent-soft); }
+.sd .tod { box-shadow: inset 0 0 0 2px var(--pop); }
+.sd tr.dienst th { border-bottom: 2px solid var(--fg); font-weight: 700; }
+.sd tr.kn td { border-top: 2px solid var(--fg); }
+.sd td.x { font-weight: 700; }
+.sd td.ein { font-weight: 700; color: var(--accent-text); font-size: 0.625rem; }
+.sd td.oo { color: var(--muted); }
+.sd td.gap { color: var(--crit); font-weight: 700; }
+.sd button.dn { background: none; border: 0; padding: 0; width: 100%; height: 100%; font: inherit; color: inherit; cursor: pointer; }
+.sd .who-btn { background: none; border: 0; padding: 0; font: inherit; font-family: var(--font-body); font-size: 0.8125rem; text-decoration: none; color: var(--fg); font-weight: 500; text-align: left; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.sd .who-btn:hover { text-decoration: underline; }
+.sd-legend { margin-top: 0.875rem; }
+.sd-legend p { margin: 0 0 0.25rem; }
+.sd-lg { display: grid; grid-template-columns: auto auto auto 1fr; gap: 0 0.625rem; font-family: var(--font-data); font-size: 0.75rem; }
+.sd-lg .pz { font-family: var(--font-body); color: var(--muted); }
+.sd-lg .wide { grid-column: 3 / -1; }
+.sd-foot { margin: 0.5rem 0 0; font-size: 0.6875rem; color: var(--muted); }
+@media (max-width: 40rem) { .sd-lg { grid-template-columns: auto auto 1fr; } .sd-lg .pz { grid-column: 3; margin-bottom: 0.25rem; } }
 </style>
 
 <div class="mast">
@@ -647,13 +679,15 @@ textarea { border-radius: 0.875rem; }
     return '<span class="person">' + r.emps.map(function (id) { return esc(EMP[id].name); }).join(", ") + '</span>' +
       (open > 0 ? '<span class="person gap">' + open + ' open</span>' : "");
   }
-  function segHtml() {
+  function segHtml(withSheet) {
+    var st = (!withSheet && state.style === "sheet") ? "table" : state.style;
     return '<div class="seg" role="group" aria-label="View style">' +
-      '<button data-style="table" aria-pressed="' + (state.style === "table") + '">Table</button>' +
-      '<button data-style="cal" aria-pressed="' + (state.style === "cal") + '">Calendar</button></div>';
+      '<button data-style="table" aria-pressed="' + (st === "table") + '">Table</button>' +
+      '<button data-style="cal" aria-pressed="' + (st === "cal") + '">Calendar</button>' +
+      (withSheet ? '<button data-style="sheet" aria-pressed="' + (st === "sheet") + '">Sheet</button>' : "") + '</div>';
   }
-  function barHtml() {
-    return '<div class="bar"><button class="back" data-back="1">&#8592; Back</button>' + segHtml() + '</div>';
+  function barHtml(withSheet) {
+    return '<div class="bar"><button class="back" data-back="1">&#8592; Back</button>' + segHtml(withSheet) + '</div>';
   }
 
   function rowsHtml(date) {
@@ -819,6 +853,70 @@ textarea { border-radius: 0.875rem; }
       '</section>';
   }
 
+
+  /* ---------- Sheet view: the Auftragsbestätigung layout for one hotel and month ---------- */
+  var DE_DOW = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  var fmtMonthDe = new Intl.DateTimeFormat("de-DE", { month: "long" });
+  /* "Ein" marks a person's first night at a hotel they have no history with, counted from tonight on. */
+  function firstNightsAt(hid, upTo) {
+    var out = {};
+    function hist(id) { return EXP[id] && EXP[id].hotels && EXP[id].hotels[hid]; }
+    for (var dt = tonight; dt <= upTo; dt = addDays(dt, 1)) {
+      entryFor(dt, hid).emps.forEach(function (id) { if (!hist(id) && !out[id]) out[id] = keyOf(dt); });
+    }
+    return out;
+  }
+  function sheetBody(h, y, m, days) {
+    var first = firstNightsAt(h.id, new Date(y, m, days)), info = [], ids = {};
+    for (var d = 1; d <= days; d++) {
+      var date = new Date(y, m, d), r = entryFor(date, h.id);
+      info.push({ d: d, date: date, k: keyOf(date), r: r });
+      r.emps.forEach(function (id) { ids[id] = 1; });
+    }
+    var people = Object.keys(ids).sort(function (a, b) { return EMP[a].name.localeCompare(EMP[b].name); });
+    var blanks = Math.max(2, 5 - people.length);
+    function cl(di, extra) {
+      var w = di.date.getDay(), c = (w === 0 || w === 6 ? "we " : "") + (di.k === keyOf(tonight) ? "tod " : "") + (extra || "");
+      return c.trim() ? ' class="' + c.trim() + '"' : "";
+    }
+    var h1 = '<tr><th class="nm">' + fmtMonthDe.format(new Date(y, m, 1)) + '</th>', h2 = '<tr><th class="nm">' + y + '</th>', h3 = '<tr class="dienst"><th class="nm">Dienst</th>', kn = '<tr class="kn"><td class="nm">Kontrolle</td>';
+    info.forEach(function (di) {
+      h1 += '<th' + cl(di) + '><button class="dn" data-hotel="' + h.id + '" data-date="' + di.k + '" aria-label="Open hotel page for ' + fmtLong.format(di.date) + '">' + di.d + '.</button></th>';
+      h2 += '<th' + cl(di) + '>' + DE_DOW[di.date.getDay()] + '</th>';
+      h3 += '<th' + cl(di) + '>' + (di.r.need > 0 ? "N" : "") + '</th>';
+      kn += '<td' + cl(di, di.r.emps.length < di.r.need ? "gap" : "") + '>' + di.r.emps.length + '</td>';
+    });
+    var rows = people.map(function (id) {
+      var tr = '<tr><td class="nm"><button class="who-btn" data-emp="' + id + '">' + esc(EMP[id].name) + '</button></td>';
+      info.forEach(function (di) {
+        var v = "", c = "";
+        if (di.r.emps.indexOf(id) !== -1) { v = first[id] === di.k ? "Ein" : "x"; c = v === "Ein" ? "ein" : "x"; }
+        else if (isBlocked(di.k, id)) { v = "oo"; c = "oo"; }
+        tr += '<td' + cl(di, c) + '>' + v + '</td>';
+      });
+      return tr + '</tr>';
+    }).join("");
+    for (var b = 0; b < blanks; b++) {
+      rows += '<tr><td class="nm"></td>' + info.map(function (di) { return '<td' + cl(di) + '></td>'; }).join("") + '</tr>';
+    }
+    var addr = h.address.split(/,\s*/), t0 = h.start.replace(/^0/, ""), t1 = h.end.replace(/^0/, ""), tm = t0 + " bis " + t1 + " Uhr";
+    return '<div class="sheetdoc">' +
+      '<div class="sd-top"><span class="sd-title">Auftragsbestätigung</span><span>Einzelnachweis zum Rahmenvertrag vom 01.07.2025</span></div>' +
+      '<div class="sd-cols">' +
+        '<div class="sd-blk"><b>Verleiher:</b>Nachtdienst Beispiel GmbH<br>Musterstraße 1<br>10115 Berlin<br>Tel: 030 555 0100<br>Mail: dispatch@example.com<br>Ihr Ansprechpartner: <b class="in">Dispatch (Demo)</b></div>' +
+        '<div class="sd-blk"><b>Entleiher:</b>' + esc(h.name) + '<br>' + esc(addr[0]) + '<br>' + esc(addr.slice(1).join(", ")) + '<br>Tel: ' + esc(h.phone) + '</div>' +
+      '</div>' +
+      '<p class="sd-p">Wir stellen Ihnen folgende Mitarbeiter als Leiharbeitnehmer, in den genannten Zeiträumen, zur Verfügung:</p>' +
+      '<div class="sd-scroll"><table class="sd" aria-label="Einsatzplan ' + esc(h.name) + ', ' + fmtMonth.format(new Date(y, m, 1)) + '"><thead>' + h1 + '</tr>' + h2 + '</tr>' + h3 + '</tr></thead><tbody>' + rows + kn + '</tr></tbody></table></div>' +
+      '<div class="sd-legend"><p><b>Dienstzeiten:</b> Tätigkeitsprofile laut Rahmenvertrag: F, M, N, P, S</p>' +
+        '<div class="sd-lg"><span>N</span><span>=</span><span>' + tm + '</span><span class="pz">es wird eine Pause gewährt von: –</span>' +
+        '<span>EIN</span><span>=</span><span>' + tm + '</span><span class="pz">es wird eine Pause gewährt von: –</span>' +
+        '<span>oo</span><span>=</span><span class="wide">Sperrdaten der Mitarbeiter</span></div></div>' +
+      '<p class="sd-p">Mit freundlichen Grüßen<br>Nachtdienst Beispiel GmbH<br><br>Dispatch (Demo)</p>' +
+      '<p class="sd-foot">diese Auftragsbestätigung wurde maschinell erstellt und ist daher ohne Unterschrift gültig</p>' +
+      '</div><p class="fine">Tap a day number to open that night, or a name for that person’s plan. Kontrolle turns red where fewer people are planned than ordered.</p>';
+  }
+
   function renderPlan() {
     var h = hotelById(state.hotel);
     var y = state.planMonth.getFullYear(), m = state.planMonth.getMonth();
@@ -853,10 +951,11 @@ textarea { border-radius: 0.875rem; }
     var tallyHtml = Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (id) {
       return '<span>' + esc(EMP[id].name) + '<b>' + tally[id] + '</b></span>';
     }).join("");
-    var body = state.style === "cal"
+    var body = state.style === "sheet" ? sheetBody(h, y, m, days)
+      : state.style === "cal"
       ? DOW + '<div class="grid tall">' + cells + '</div><div class="legend"><span><i class="dot warn"></i> Alert set by office</span><span>Badge = planned / ordered</span></div><p class="fine">Tap a day to open the hotel page for that night.</p>'
       : '<div class="plan">' + rows + '</div><p class="fine">Tap a name for that person’s plan. Tap the arrow to open the hotel page for that night.</p>';
-    return '<section class="view">' + barHtml() +
+    return '<section class="view">' + barHtml(true) +
       '<h2 style="margin-top:8px">Monthly plan</h2>' +
       '<div class="cal-head"><button class="icon-btn" data-planmonth="-1" aria-label="Previous month">&#8249;</button>' +
       '<h1>' + fmtMonth.format(state.planMonth) + '</h1>' +
